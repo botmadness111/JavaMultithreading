@@ -1,21 +1,35 @@
+import java.util.Scanner;
 
 public class Main {
     public static void main(String[] args) {
-        Thread thread1 = new Thread(new Runner());
-        Thread thread2 = new Thread(new Runner());
+        MyThread thread = new MyThread();
+        thread.start();
 
-        thread1.start();
-        thread2.start();
+        Scanner scanner = new Scanner(System.in);
+
+        scanner.nextLine();
+
+        thread.shutdown();
     }
 }
 
-class Runner implements Runnable{
+class MyThread extends Thread {
+    public volatile boolean running = true;
 
     @Override
     public void run() {
-        for (int i=0; i<100; i++){
-            System.out.println(i);
+        while (running) {
+            try {
+                Thread.sleep(300);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+            System.out.println("Hello from Thread");
         }
+    }
+
+    public void shutdown() {
+        running = false;
     }
 }
 
