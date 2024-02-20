@@ -1,35 +1,42 @@
 import java.util.Scanner;
 
 public class Main {
-    public static void main(String[] args) {
-        MyThread thread = new MyThread();
-        thread.start();
+    private int counter = 0;
 
-        Scanner scanner = new Scanner(System.in);
-
-        scanner.nextLine();
-
-        thread.shutdown();
+    public static void main(String[] args) throws InterruptedException {
+        Main main = new Main();
+        main.test();
     }
-}
 
-class MyThread extends Thread {
-    public volatile boolean running = true;
+    private synchronized void increment(){
+        counter++;
+    }
 
-    @Override
-    public void run() {
-        while (running) {
-            try {
-                Thread.sleep(300);
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
+    public void test() throws InterruptedException {
+        Thread thread1 = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                for (int i = 0; i < 10000; i++) {
+                    increment();
+                }
             }
-            System.out.println("Hello from Thread");
-        }
-    }
+        });
 
-    public void shutdown() {
-        running = false;
+        Thread thread2 = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                for (int i = 0; i < 10000; i++) {
+                    increment();
+                }
+            }
+        });
+
+        thread1.start();
+        thread2.start();
+
+        thread1.join();
+        thread2.join();
+
+        System.out.println(counter);
     }
 }
-
