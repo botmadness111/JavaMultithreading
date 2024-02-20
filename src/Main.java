@@ -1,26 +1,21 @@
 
 public class Main {
     public static void main(String[] args) {
-        MyThread myThread1 = new MyThread();
-        myThread1.start();
+        Thread thread1 = new Thread(new Runner());
+        Thread thread2 = new Thread(new Runner());
 
-        MyThread myThread2 = new MyThread();
-        myThread2.start();
+        thread1.start();
+        thread2.start();
     }
 }
 
-class MyThread extends Thread {
+class Runner implements Runnable{
+
     @Override
     public void run() {
-        for (int i = 0; i < 100; i++) {
-
-            try {
-                Thread.sleep(1);
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
-
+        for (int i=0; i<100; i++){
             System.out.println(i);
         }
     }
 }
+
