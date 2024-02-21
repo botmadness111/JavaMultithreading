@@ -1,42 +1,54 @@
-import java.util.Scanner;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.TreeSet;
+import java.util.concurrent.*;
 
 public class Main {
-    private int counter = 0;
+    public static void main(String[] args) {
+        Work work = new Work();
 
-    public static void main(String[] args) throws InterruptedException {
-        Main main = new Main();
-        main.test();
-    }
+        Long start = System.currentTimeMillis();
 
-    private synchronized void increment(){
-        counter++;
-    }
+        ExecutorService executorService = Executors.newFixedThreadPool(1);
 
-    public void test() throws InterruptedException {
-        Thread thread1 = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                for (int i = 0; i < 10000; i++) {
-                    increment();
+        for (int k = 0; k < 5; k++) {
+            executorService.submit(() -> {
+                for (int i = 0; i < 1000; i++) {
+                    work.run();
                 }
-            }
-        });
+            });
+        }
 
-        Thread thread2 = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                for (int i = 0; i < 10000; i++) {
-                    increment();
-                }
-            }
-        });
+        executorService.shutdown();
+        try {
+            executorService.awaitTermination(Long.MAX_VALUE, TimeUnit.MICROSECONDS);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+        Long end = System.currentTimeMillis();
 
-        thread1.start();
-        thread2.start();
-
-        thread1.join();
-        thread2.join();
-
-        System.out.println(counter);
+        System.out.println(work.getList().size());
+        System.out.println(end - start + " ms");
     }
 }
+
+class Work implements Runnable {
+    private List<Integer> list = new ArrayList<>();
+
+    @Override
+    public void run() {
+        try {
+            Thread.sleep(1);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+        list.add(2);
+    }
+
+    public List<Integer> getList() {
+        return list;
+    }
+}
+
+
+
