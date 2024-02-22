@@ -1,54 +1,62 @@
-import java.util.ArrayList;
-import java.util.List;
-import java.util.TreeSet;
+import java.util.*;
 import java.util.concurrent.*;
 
 public class Main {
     public static void main(String[] args) {
+
         Work work = new Work();
 
-        Long start = System.currentTimeMillis();
-
-        ExecutorService executorService = Executors.newFixedThreadPool(1);
-
-        for (int k = 0; k < 5; k++) {
-            executorService.submit(() -> {
-                for (int i = 0; i < 1000; i++) {
-                    work.run();
+        Thread thread1 = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    work.produce();
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
                 }
-            });
-        }
+            }
+        });
 
-        executorService.shutdown();
-        try {
-            executorService.awaitTermination(Long.MAX_VALUE, TimeUnit.MICROSECONDS);
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
-        Long end = System.currentTimeMillis();
+        Thread thread2 = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    work.consumer();
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        });
 
-        System.out.println(work.getList().size());
-        System.out.println(end - start + " ms");
+        thread1.start();
+
+        thread2.start();
     }
 }
 
-class Work implements Runnable {
-    private List<Integer> list = new ArrayList<>();
-
-    @Override
-    public void run() {
-        try {
-            Thread.sleep(1);
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
+class Work {
+    public void produce() throws InterruptedException {
+        synchronized (this) {
+            System.out.println("Produce starting: ");
+            this.wait(); //тут поток остановится и тут же он продолжится
+            System.out.println("Produce ending: ");
         }
-        list.add(2);
     }
 
-    public List<Integer> getList() {
-        return list;
+    public void consumer() throws InterruptedException {
+        Thread.sleep(1000);
+        Scanner scanner = new Scanner(System.in);
+        synchronized (this) {
+            System.out.println("Press enter for continue ");
+            scanner.nextLine();
+            this.notify();
+
+            Thread.sleep(5000);
+        }
     }
 }
+
+
 
 
 
