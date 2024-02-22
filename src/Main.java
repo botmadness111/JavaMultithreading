@@ -3,25 +3,22 @@ import java.util.concurrent.*;
 
 public class Main {
     public static void main(String[] args) {
-
-        Work work = new Work();
-
+        ProducerConsumer producerConsumer = new ProducerConsumer();
         Thread thread1 = new Thread(new Runnable() {
             @Override
             public void run() {
                 try {
-                    work.produce();
+                    producerConsumer.produce();
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
                 }
             }
         });
-
         Thread thread2 = new Thread(new Runnable() {
             @Override
             public void run() {
                 try {
-                    work.consumer();
+                    producerConsumer.consume();
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
                 }
@@ -29,34 +26,45 @@ public class Main {
         });
 
         thread1.start();
-
         thread2.start();
+
     }
 }
 
-class Work {
+class ProducerConsumer {
+    Queue<Integer> queue = new LinkedList<>();
+    final int size = 10;
+    Object lock = new Object();
+
     public void produce() throws InterruptedException {
-        synchronized (this) {
-            System.out.println("Produce starting: ");
-            this.wait(); //тут поток остановится и тут же он продолжится
-            System.out.println("Produce ending: ");
+
+            synchronized (lock) {
+                while (true) {
+
+                if (queue.size() == size) {
+                    lock.wait();
+
+                }
+                queue.add(2);
+                lock.notify();
+            }
         }
     }
 
-    public void consumer() throws InterruptedException {
-        Thread.sleep(1000);
-        Scanner scanner = new Scanner(System.in);
-        synchronized (this) {
-            System.out.println("Press enter for continue ");
-            scanner.nextLine();
-            this.notify();
+    public void consume() throws InterruptedException {
+        while (true) {
+            synchronized (lock) {
 
-            Thread.sleep(5000);
+                if (queue.size() == 0) {
+                    lock.wait();
+                }
+
+                queue.poll();
+                System.out.println(queue.size());
+
+                lock.notify();
+            }
+            Thread.sleep(1000);
         }
     }
 }
-
-
-
-
-
