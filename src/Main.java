@@ -1,41 +1,37 @@
 import java.util.Random;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.*;
 
 public class Main {
-    public static void main(String[] args) throws InterruptedException {
-        Thread thread = new Thread(new Runnable() {
+    public static void main(String[] args) {
+        Random random = new Random();
+
+        ExecutorService executorService = Executors.newFixedThreadPool(1);
+        Future future = executorService.submit(new Callable<Integer>() {
             @Override
-            public void run() {
-                System.out.println("Start thread");
-                for (int i = 0; i < 1_000_000_000; i++) {
-                    try {
-                        Thread.sleep(5000);
-                    } catch (InterruptedException e) {
-                        System.out.println("in catch of InterruptedException");
-                        Thread.currentThread().interrupt();
-                    }
+            public Integer call() throws Exception {
+                System.out.println("Starting thread");
 
-                    if (Thread.currentThread().isInterrupted()){
-                        break;
-                    }
+                Thread.sleep(1);
+                int value = random.nextInt(10);
 
-                    Math.sin(i);
-                }
-
+                if (value <= 5) {
+                    throw new Exception("Someone bad happened");
+                } else
+                    return value;
             }
         });
 
-        thread.start();
+        executorService.shutdown();
 
-        thread.interrupt(); //меняем состояние потока на 'прерванный'
-        thread.join();
+        try {
+            System.out.println(future.get());
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        } catch (ExecutionException ex) {
+            Throwable e = ex.getCause();
+            System.out.println(e.getMessage());
+        }
 
 
-        System.out.println("Hello");
     }
 }
