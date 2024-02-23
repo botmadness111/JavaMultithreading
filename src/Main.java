@@ -1,70 +1,59 @@
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 
 public class Main {
-    public static void main(String[] args) {
-        ProducerConsumer producerConsumer = new ProducerConsumer();
-        Thread thread1 = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    producerConsumer.produce();
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-        });
-        Thread thread2 = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    producerConsumer.consume();
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-        });
+    public static void main(String[] args) throws InterruptedException {
+        ExecutorService executorService = Executors.newFixedThreadPool(200);
 
-        thread1.start();
-        thread2.start();
+        Connection connection = Connection.getConnection();
+        for (int i = 0; i < 200; i++) {
+            executorService.submit(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        connection.work();
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+            });
+        }
 
+        executorService.shutdown();
     }
 }
 
-class ProducerConsumer {
-    Queue<Integer> queue = new LinkedList<>();
-    final int size = 10;
-    Object lock = new Object();
+class Connection {
+    private static Connection connection = new Connection();
+    private int connectionCount;
+    private Semaphore semaphore = new Semaphore(10);
 
-    public void produce() throws InterruptedException {
+    private Connection() {
+    }
 
-            synchronized (lock) {
-                while (true) {
+    public static Connection getConnection() {
+        return connection;
+    }
 
-                if (queue.size() == size) {
-                    lock.wait();
-
-                }
-                queue.add(2);
-                lock.notify();
-            }
+    public void work() throws InterruptedException {
+        semaphore.acquire();
+        try {
+            doWork();
+        } finally {
+            semaphore.release();
         }
     }
 
-    public void consume() throws InterruptedException {
-        while (true) {
-            synchronized (lock) {
-
-                if (queue.size() == 0) {
-                    lock.wait();
-                }
-
-                queue.poll();
-                System.out.println(queue.size());
-
-                lock.notify();
-            }
-            Thread.sleep(1000);
+    private void doWork() throws InterruptedException {
+        synchronized (this) {
+            connectionCount++;
+            System.out.println("Work: " + connectionCount);
+        }
+        Thread.sleep(1000);
+        synchronized (this) {
+            connectionCount--;
         }
     }
 }
